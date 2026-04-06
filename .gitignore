@@ -26,6 +26,9 @@ Setup-Linux-TransDevs-*.log
 .idea/
 *.sublime-*
 
+# Qwen Code
+.qwen/
+
 # OS
 .DS_Store
 Thumbs.db

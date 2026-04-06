@@ -1,16 +1,23 @@
 #!/bin/bash
-###############################################################################
+#################################################################################
 #                                                                               #
-#                           ⚧  TRANSDEVS  ⚧                                     #
+#                           ⚧  TRANSDEVS  ⚧                                    #
 #                                                                               #
-#                SETUP LINUX AUTOMÁTICO - MULTI-DISTRO v2.0                    #
+#                SETUP LINUX AUTOMÁTICO - MULTI-DISTRO v2.0                     #
 #           Detecta e adapta-se à sua distribuição automaticamente              #
 #         Suporta: Ubuntu/Debian, Fedora/RHEL/Alma/Rocky, Arch/Manjaro          #
 #                                                                               #
 #               Uso: sudo bash Setup-Linux-TransDevs.sh                         #
 #          Ou: echo "SUA_SENHA" | sudo -S bash Setup-Linux-TransDevs.sh         #
 #                                                                               #
-###############################################################################
+#         ✅ 21 seções de configuração automática:                              #
+#         • System Update, Locale/Timezone, Repos, Dev Tools                    #
+#         • Java (OpenJDK 21-25), Node.js, Python, .NET SDK                     #
+#         • Docker, Databases (MariaDB, PostgreSQL, MongoDB, Redis)             #
+#         • VS Code, Chrome, NVIDIA Drivers, Bluetooth                          #
+#         • DevOps (K8s, Terraform, AWS/Azure CLI), System Tweaks               #
+#                                                                               #
+#################################################################################
 
 # Log de execução
 LOG_FILE="/home/$(logname 2>/dev/null || echo "${SUDO_USER:-root}")/Área de trabalho/Setup-Linux-TransDevs-$(date +%Y%m%d_%H%M%S).log"
@@ -289,7 +296,7 @@ print_system_info() {
     echo -e "${CYAN}Kernel:${NC} $(uname -r)"
     echo -e "${CYAN}Hostname:${NC} $(hostname)"
     echo ""
-    echo -e "${CYAN}CPU:${NC} $(lscpu 2>/dev/null | grep -iE 'model name|processador|processor' | head -1 | cut -d: -f2 | xargs || cat /proc/cpuinfo 2>/dev/null | grep -i 'model name' | head -1 | cut -d: -f2 | xargs || echo 'N/A')"
+    echo -e "${CYAN}CPU:${NC} $(cat /proc/cpuinfo 2>/dev/null | grep -i 'model name' | head -1 | cut -d: -f2 | xargs || lscpu 2>/dev/null | grep -iE 'model name|Nome do modelo|processador|processor' | head -1 | cut -d: -f2 | xargs || echo 'N/A')"
     echo -e "${CYAN}GPU:${NC} $(lspci 2>/dev/null | grep -iE 'VGA|3D|Display' | head -1 | cut -d: -f3- | xargs || echo 'N/A')"
     echo -e "${CYAN}RAM:${NC} $(free -h 2>/dev/null | grep Mem | awk '{print $2}' || echo 'N/A')"
     echo -e "${CYAN}Disco:${NC} $(df -h / 2>/dev/null | tail -1 | awk '{print $2}' || echo 'N/A')"
@@ -1606,15 +1613,48 @@ do_devops_tools() {
 do_bluetooth() {
     log_section "18. BLUETOOTH"
 
-    # Verificar se há hardware Bluetooth
-    local has_bt_usb=false
-    if lsusb | grep -iE "bluetooth|wireless" &>/dev/null; then
-        log_ok "Adaptador Bluetooth USB detectado"
-        has_bt_usb=true
-    else
-        log_warn "Nenhum adaptador Bluetooth USB detectado - pulando configuração"
+    # Validar se o sistema possui hardware Bluetooth
+    local has_bt=false
+    local bt_source=""
+
+    # Método 1: Verificar adaptadores USB Bluetooth
+    if lsusb 2>/dev/null | grep -qiE "bluetooth|wireless|bt|0e0f|0a5c|0b05|8087|0cf3|0489|04ca|0930|14e4"; then
+        has_bt=true
+        bt_source="USB"
+    fi
+
+    # Método 2: Verificar dispositivos PCI/PCIe Bluetooth
+    if [ "$has_bt" = false ] && lspci 2>/dev/null | grep -qiE "bluetooth|wireless|network.*controller"; then
+        has_bt=true
+        bt_source="PCI"
+    fi
+
+    # Método 3: Verificar se já existe interface hci (laptops com BT integrado)
+    if [ "$has_bt" = false ] && ls /sys/class/bluetooth/ 2>/dev/null | head -1 &>/dev/null; then
+        has_bt=true
+        bt_source="Sistema"
+    fi
+
+    # Método 4: Verificar módulos do kernel relacionados a BT
+    if [ "$has_bt" = false ] && lsmod 2>/dev/null | grep -qE "btusb|btintel|btrtl|btbcm|bluetooth"; then
+        has_bt=true
+        bt_source="Módulo Kernel"
+    fi
+
+    # Método 5: Verificar via dmesg (útil para hardware detectado mas não ativo)
+    if [ "$has_bt" = false ] && dmesg 2>/dev/null | grep -qiE "bluetooth|btusb|hci" | head -1 &>/dev/null; then
+        has_bt=true
+        bt_source="dmesg"
+    fi
+
+    # Se nenhum hardware Bluetooth foi detectado, pular
+    if [ "$has_bt" = false ]; then
+        log_warn "Nenhum hardware Bluetooth detectado (USB, PCI, módulo kernel ou dmesg)"
+        log_info "Pulando configuração de Bluetooth - se você possui adaptador, conecte-o e reexecute o script"
         return 0
     fi
+
+    log_ok "Hardware Bluetooth detectado via: ${bt_source}"
 
     # Verificar módulos do kernel
     if ! lsmod | grep -q "btusb"; then
@@ -1743,7 +1783,7 @@ do_summary() {
     echo ""
     echo -e "${BLUE}Sistema:${NC} $OS_NAME"
     echo -e "${BLUE}Kernel:${NC} $(uname -r)"
-    echo -e "${BLUE}CPU:${NC} $(lscpu 2>/dev/null | grep -iE 'model name|processador|processor' | head -1 | cut -d: -f2 | xargs || cat /proc/cpuinfo 2>/dev/null | grep -i 'model name' | head -1 | cut -d: -f2 | xargs || echo 'N/A')"
+    echo -e "${BLUE}CPU:${NC} $(cat /proc/cpuinfo 2>/dev/null | grep -i 'model name' | head -1 | cut -d: -f2 | xargs || lscpu 2>/dev/null | grep -iE 'model name|Nome do modelo|processador|processor' | head -1 | cut -d: -f2 | xargs || echo 'N/A')"
     echo -e "${BLUE}GPU:${NC} $(lspci 2>/dev/null | grep -iE 'VGA|3D|Display' | head -1 | cut -d: -f3- | xargs || echo 'N/A')"
     echo -e "${BLUE}RAM:${NC} $(free -h 2>/dev/null | grep Mem | awk '{print $2}' || echo 'N/A')"
     echo ""
