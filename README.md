@@ -953,7 +953,7 @@ Ao abrir uma issue, inclua:
 
 | Assistente | Role | Tecnologia | Versão |
 |-----------|------|------------|--------|
-| **Qwen Code** | 🛠️ Assistente LLM - Desenvolvimento, Debug, Validação de Código e Documentação | Qwen Code (Alibaba Group) | v2.0 |
+| **Qwen Code** | 🛠️ Debug e Validação de Código | Qwen Code (Alibaba Group) | v2.0 |
 
 </div>
 
@@ -1079,7 +1079,7 @@ Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](L
 
 *Diversidade na tecnologia faz a diferença!*
 
-*Assistido por Qwen Code (Alibaba Group) v2.0*
+*Debug e validação de código por Qwen Code (Alibaba Group) v2.0*
 
 ---
 
