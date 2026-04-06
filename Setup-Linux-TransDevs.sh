@@ -159,25 +159,57 @@ detect_os() {
 ###############################################################################
 
 # Função para obter codename LTS compatível (para repos de terceiros)
+# Usa o LTS mais recente amplamente suportado (máxima compatibilidade)
 get_lts_codename() {
     # Mapeamento de codenames recentes para LTS compatível
+    # Prioridade: jammy (22.04) - LTS mais recente com suporte universal de terceiros
     case "${OS_CODENAME:-unknown}" in
-        questing|oracular|noble) echo "noble" ;;  # 25.10, 24.10, 24.04 -> 24.04 LTS
-        lunar|kinetic|jammy) echo "jammy" ;;      # 23.04, 22.10, 22.04 -> 22.04 LTS
-        focal|bionic) echo "${OS_CODENAME}" ;;     # 20.04, 18.04 já são LTS
-        *) echo "noble" ;;  # Fallback para LTS mais recente
+        questing|oracular|noble) echo "jammy" ;;   # 25.10, 24.10, 24.04 -> 22.04 LTS (mais compatível)
+        lunar|kinetic|jammy) echo "jammy" ;;       # 23.04, 22.10, 22.04 -> 22.04 LTS
+        focal) echo "focal" ;;                      # 20.04 LTS ainda suportado
+        bionic) echo "focal" ;;                     # 18.04 -> 20.04 LTS
+        *) echo "jammy" ;;                          # Fallback para LTS mais compatível
     esac
 }
 
 # Função para obter versão LTS do Ubuntu (número)
+# Usa o LTS mais recente amplamente suportado (máxima compatibilidade)
 get_lts_version() {
     case "${OS_CODENAME:-unknown}" in
-        questing|oracular|noble) echo "24.04" ;;
-        lunar|kinetic|jammy) echo "22.04" ;;
-        focal) echo "20.04" ;;
-        bionic) echo "18.04" ;;
-        *) echo "24.04" ;;
+        questing|oracular|noble) echo "22.04" ;;    # -> 22.04 LTS (mais compatível)
+        lunar|kinetic|jammy) echo "22.04" ;;        # -> 22.04 LTS
+        focal) echo "20.04" ;;                       # 20.04 LTS
+        bionic) echo "20.04" ;;                      # 18.04 -> 20.04 LTS
+        *) echo "22.04" ;;                           # Fallback para LTS mais compatível
     esac
+}
+
+# Função para verificar se um repositório LTS existe antes de adicionar
+# Tenta o LTS mais recente, fallback para LTS anterior
+get_compatible_lts_codename() {
+    local repo_url="$1"  # URL base do repo (ex: https://repo.mongodb.org/apt/ubuntu/dists/)
+
+    # Tentar LTS mais recente primeiro (noble/24.04)
+    if curl -fsSL "${repo_url}noble/" &>/dev/null; then
+        echo "noble"
+        return 0
+    fi
+
+    # Fallback para LTS estável (jammy/22.04)
+    if curl -fsSL "${repo_url}jammy/" &>/dev/null; then
+        echo "jammy"
+        return 0
+    fi
+
+    # Último recurso: focal/20.04
+    if curl -fsSL "${repo_url}focal/" &>/dev/null; then
+        echo "focal"
+        return 0
+    fi
+
+    # Nenhum LTS encontrado - retornar o mapeamento padrão
+    get_lts_codename
+    return 1
 }
 
 # Função para obter versão RHEL compatível com Microsoft (8 ou 9)
@@ -332,28 +364,28 @@ do_cleanup_invalid_repos() {
             fi
         fi
 
-        # Remover repositório MongoDB com codename incorreto (questing)
+        # Remover repositório MongoDB com codename incorreto (questing ou noble se ainda não suportado)
         if [ -f /etc/apt/sources.list.d/mongodb-org-7.0.list ]; then
-            if grep -q "questing" /etc/apt/sources.list.d/mongodb-org-7.0.list 2>/dev/null; then
-                log_warn "Removendo repositório MongoDB inválido (codename questing)..."
+            if grep -qE "questing|noble" /etc/apt/sources.list.d/mongodb-org-7.0.list 2>/dev/null; then
+                log_warn "Removendo repositório MongoDB inválido (codename não suportado ainda)..."
                 rm -f /etc/apt/sources.list.d/mongodb-org-7.0.list
                 repos_fixed=true
             fi
         fi
 
-        # Remover repositório HashiCorp com codename incorreto (questing)
+        # Remover repositório HashiCorp com codename incompatível
         if [ -f /etc/apt/sources.list.d/hashicorp.list ]; then
-            if grep -q "questing" /etc/apt/sources.list.d/hashicorp.list 2>/dev/null; then
-                log_warn "Removendo repositório HashiCorp inválido (codename questing)..."
+            if grep -qE "questing|oracular" /etc/apt/sources.list.d/hashicorp.list 2>/dev/null; then
+                log_warn "Removendo repositório HashiCorp inválido (codename não LTS)..."
                 rm -f /etc/apt/sources.list.d/hashicorp.list
                 repos_fixed=true
             fi
         fi
 
-        # Remover repositório Docker com codename incorreto (questing)
+        # Remover repositório Docker com codename incompatível (questing, oracular, noble se não suportado)
         if [ -f /etc/apt/sources.list.d/docker.list ]; then
-            if grep -q "questing" /etc/apt/sources.list.d/docker.list 2>/dev/null; then
-                log_warn "Removendo repositório Docker inválido (codename questing)..."
+            if grep -qE "questing|oracular" /etc/apt/sources.list.d/docker.list 2>/dev/null; then
+                log_warn "Removendo repositório Docker inválido (codename não LTS)..."
                 rm -f /etc/apt/sources.list.d/docker.list
                 repos_fixed=true
             fi
@@ -1536,8 +1568,11 @@ PGPASSEOF
         case "$OS_FAMILY" in
             debian)
                 curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/mongodb.gpg 2>/dev/null || true
-                # Usar codename LTS compatível (MongoDB não suporta versões intermediárias do Ubuntu)
-                local MONGO_CODENAME=$(get_lts_codename)
+
+                # Usar LTS compatível - tenta mais recente primeiro, fallback para LTS estável
+                local MONGO_REPO_URL="https://repo.mongodb.org/apt/ubuntu/dists/"
+                local MONGO_CODENAME=$(get_compatible_lts_codename "$MONGO_REPO_URL")
+
                 echo "deb [ arch=amd64,arm64 signed-by=/etc/apt/trusted.gpg.d/mongodb.gpg ] https://repo.mongodb.org/apt/$OS_ID $MONGO_CODENAME/mongodb-org/7.0 multiverse" | \
                     tee /etc/apt/sources.list.d/mongodb-org-7.0.list > /dev/null 2>/dev/null || true
                 $CMD_UPDATE 2>/dev/null || true
