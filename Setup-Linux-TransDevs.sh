@@ -1,7 +1,7 @@
 #!/bin/bash
 ###############################################################################
 #                                                                               #
-#                           ⚧  TRANSDEVS                                        #
+#                           ⚧  TRANSDEVS  ⚧                                     #
 #                                                                               #
 #                SETUP LINUX AUTOMÁTICO - MULTI-DISTRO v2.0                    #
 #           Detecta e adapta-se à sua distribuição automaticamente              #
@@ -1603,8 +1603,96 @@ do_devops_tools() {
     log_ok "Ferramentas DevOps instaladas!"
 }
 
+do_bluetooth() {
+    log_section "18. BLUETOOTH"
+
+    # Verificar se há hardware Bluetooth
+    local has_bt_usb=false
+    if lsusb | grep -iE "bluetooth|wireless" &>/dev/null; then
+        log_ok "Adaptador Bluetooth USB detectado"
+        has_bt_usb=true
+    else
+        log_warn "Nenhum adaptador Bluetooth USB detectado - pulando configuração"
+        return 0
+    fi
+
+    # Verificar módulos do kernel
+    if ! lsmod | grep -q "btusb"; then
+        log_info "Carregando módulo btusb..."
+        modprobe btusb 2>/dev/null || {
+            log_warn "Módulo btusb não disponível"
+            return 0
+        }
+    fi
+
+    # Instalar pacotes Bluetooth se necessário
+    if ! systemctl list-unit-files | grep -q "bluetooth.service"; then
+        log_info "Instalando pacotes Bluetooth..."
+        case "$OS_FAMILY" in
+            debian)
+                pkg_install "bluez bluez-tools blueman" "pacotes Bluetooth" 2>/dev/null || \
+                pkg_install "bluez bluez-tools" "pacotes Bluetooth básicos" 2>/dev/null || true
+                ;;
+            rhel)
+                $CMD_INSTALL bluez bluez-tools 2>/dev/null || true
+                if [[ "$PKG_MGR" == "dnf" ]]; then
+                    $CMD_INSTALL blueman 2>/dev/null || true
+                fi
+                ;;
+            arch)
+                pkg_install "bluez bluez-tools blueman" "pacotes Bluetooth" 2>/dev/null || \
+                pkg_install "bluez bluez-tools" "pacotes Bluetooth básicos" 2>/dev/null || true
+                ;;
+            suse)
+                $CMD_INSTALL bluez bluez-tools 2>/dev/null || true
+                ;;
+        esac
+        systemctl daemon-reload 2>/dev/null || true
+    fi
+
+    # Verificar e desbloquear rfkill
+    if command -v rfkill &> /dev/null; then
+        if rfkill list bluetooth 2>/dev/null | grep -q "Soft blocked: yes"; then
+            log_warn "Bluetooth bloqueado por software - desbloqueando..."
+            rfkill unblock bluetooth 2>/dev/null || true
+        fi
+    fi
+
+    # Habilitar e iniciar serviço
+    systemctl enable bluetooth 2>/dev/null || true
+    systemctl restart bluetooth 2>/dev/null || true
+    sleep 2
+
+    if systemctl is-active --quiet bluetooth; then
+        log_ok "Serviço Bluetooth ativo e habilitado"
+    else
+        log_warn "Serviço Bluetooth não pôde ser iniciado"
+        return 0
+    fi
+
+    # Configurar controlador
+    bluetoothctl <<EOF &>/dev/null
+power off
+power on
+pairable on
+discoverable on
+agent on
+default-agent
+EOF
+
+    sleep 1
+
+    # Mostrar status
+    log_info "Status do controlador:"
+    bluetoothctl show 2>/dev/null | grep -E "Powered|Pairable|Discoverable" | while read -r line; do
+        echo -e "  ${CYAN}•${NC} $line"
+    done
+
+    log_ok "Bluetooth configurado com sucesso!"
+}
+
 do_system_tweaks() {
-    log_section "18. OTIMIZAÇÕES DO SISTEMA"
+    log_section "19. OTIMIZAÇÕES DO SISTEMA"
 
     log_info "Aplicando otimizações..."
 
@@ -1634,7 +1722,7 @@ do_system_tweaks() {
 }
 
 do_cleanup() {
-    log_section "19. LIMPEZA FINAL"
+    log_section "20. LIMPEZA FINAL"
 
     log_info "Limpando pacotes e cache..."
     $CMD_AUTOREMOVE 2>/dev/null || true
@@ -1647,7 +1735,7 @@ do_cleanup() {
 }
 
 do_summary() {
-    log_section "RESUMO DA INSTALAÇÃO"
+    log_section "21. RESUMO DA INSTALAÇÃO"
 
     echo -e "${GREEN}============================================${NC}"
     echo -e "${GREEN}  INSTALAÇÃO CONCLUÍDA COM SUCESSO!${NC}"
@@ -1735,6 +1823,7 @@ main() {
     do_chrome
     do_vscode
     do_nvidia
+    do_bluetooth
     do_db_extra_tools
     do_devops_tools
     do_system_tweaks
