@@ -1393,8 +1393,77 @@ do_nvidia() {
     fi
 }
 
+do_terminal_theme() {
+    log_section "16. TEMA DO TERMINAL (Ubuntu)"
+
+    # Aplicar apenas no Ubuntu
+    if [[ "$OS_ID" != "ubuntu" ]]; then
+        log_info "Terminal theme específico apenas para Ubuntu - pulando"
+        return 0
+    fi
+
+    # Verificar se está em ambiente gráfico
+    if [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then
+        log_warn "Ambiente gráfico não detectado - pulando configuração do terminal"
+        return 0
+    fi
+
+    # Verificar se gsettings está disponível
+    if ! command -v gsettings &> /dev/null; then
+        log_warn "gsettings não disponível - pulando configuração do terminal"
+        return 0
+    fi
+
+    log_info "Configurando tema do GNOME Terminal..."
+
+    # Obter perfil padrão do GNOME Terminal
+    local profile_uuid=$(gsettings get org.gnome.Terminal.Legacy.Profiles default 2>/dev/null | tr -d "'")
+
+    if [ -z "$profile_uuid" ] || [ "$profile_uuid" = "" ]; then
+        log_warn "Perfil padrão do GNOME Terminal não encontrado - criando novo perfil..."
+        profile_uuid=$(uuidgen 2>/dev/null || echo "transdevs-$(date +%s)")
+
+        # Obter lista de perfis existentes
+        local profile_list=$(gsettings get org.gnome.Terminal.Legacy.Profiles list 2>/dev/null)
+        if [ -z "$profile_list" ] || [ "$profile_list" = "@as []" ]; then
+            gsettings set org.gnome.Terminal.Legacy.Profiles list "['${profile_uuid}']" 2>/dev/null || true
+        else
+            gsettings set org.gnome.Terminal.Legacy.Profiles list "$(echo "$profile_list" | sed "s/\]$/, '${profile_uuid}']/")" 2>/dev/null || true
+        fi
+
+        gsettings set org.gnome.Terminal.Legacy.Profiles default "$profile_uuid" 2>/dev/null || true
+    fi
+
+    local profile_path="/org/gnome/terminal/legacy/profiles:/:${profile_uuid}/"
+
+    # Fundo semi-transparente (20% transparente = 80% opaco)
+    log_info "Aplicando fundo semi-transparente (20%)..."
+    gsettings set "${profile_path}" use-theme-colors false 2>/dev/null || true
+    gsettings set "${profile_path}" use-theme-transparency false 2>/dev/null || true
+    gsettings set "${profile_path}" background-color '#000000' 2>/dev/null || true
+    gsettings set "${profile_path}" background-transparency-percent 20 2>/dev/null || true
+
+    # Texto verde (#00FF00)
+    log_info "Aplicando texto verde..."
+    gsettings set "${profile_path}" foreground-color '#00FF00' 2>/dev/null || true
+
+    # Configurações adicionais
+    gsettings set "${profile_path}" visible-name "TransDevs Theme" 2>/dev/null || true
+    gsettings set "${profile_path}" font 'Ubuntu Mono 13' 2>/dev/null || true
+    gsettings set "${profile_path}" bold-is-bright true 2>/dev/null || true
+    gsettings set "${profile_path}" cursor-shape 'block' 2>/dev/null || true
+    gsettings set "${profile_path}" cursor-blink-mode 'on' 2>/dev/null || true
+    gsettings set "${profile_path}" default-size-columns 120 2>/dev/null || true
+    gsettings set "${profile_path}" default-size-rows 30 2>/dev/null || true
+
+    log_ok "Terminal configurado com sucesso!"
+    log_info "• Fundo: 20% transparente (80% opaco)"
+    log_info "• Texto: Verde (#00FF00)"
+    log_info "• Fonte: Ubuntu Mono 13"
+}
+
 do_db_extra_tools() {
-    log_section "16. FERRAMENTAS ADICIONAIS DE BANCO DE DADOS"
+    log_section "17. FERRAMENTAS ADICIONAIS DE BANCO DE DADOS"
 
     log_info "Instalando ferramentas de banco de dados..."
 
@@ -1499,7 +1568,7 @@ EOF
 }
 
 do_devops_tools() {
-    log_section "17. FERRAMENTAS DEVOPS E CLOUD"
+    log_section "18. FERRAMENTAS DEVOPS E CLOUD"
 
     log_info "Instalando ferramentas DevOps..."
 
@@ -1611,7 +1680,7 @@ do_devops_tools() {
 }
 
 do_bluetooth() {
-    log_section "18. BLUETOOTH"
+    log_section "19. BLUETOOTH"
 
     # Validar se o sistema possui hardware Bluetooth
     local has_bt=false
@@ -1732,7 +1801,7 @@ EOF
 }
 
 do_system_tweaks() {
-    log_section "19. OTIMIZAÇÕES DO SISTEMA"
+    log_section "20. OTIMIZAÇÕES DO SISTEMA"
 
     log_info "Aplicando otimizações..."
 
@@ -1762,7 +1831,7 @@ do_system_tweaks() {
 }
 
 do_cleanup() {
-    log_section "20. LIMPEZA FINAL"
+    log_section "21. LIMPEZA FINAL"
 
     log_info "Limpando pacotes e cache..."
     $CMD_AUTOREMOVE 2>/dev/null || true
@@ -1775,7 +1844,7 @@ do_cleanup() {
 }
 
 do_summary() {
-    log_section "21. RESUMO DA INSTALAÇÃO"
+    log_section "22. RESUMO DA INSTALAÇÃO"
 
     echo -e "${GREEN}============================================${NC}"
     echo -e "${GREEN}  INSTALAÇÃO CONCLUÍDA COM SUCESSO!${NC}"
@@ -1863,6 +1932,7 @@ main() {
     do_chrome
     do_vscode
     do_nvidia
+    do_terminal_theme
     do_bluetooth
     do_db_extra_tools
     do_devops_tools
