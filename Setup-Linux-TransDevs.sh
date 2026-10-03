@@ -1,14 +1,14 @@
 #!/bin/bash
 #################################################################################
 #                                                                               #
-#                           ⚧  TRANSDEVS  ⚧                                    #
+#                           ⚧  TRAVADEV  ⚧                                    #
 #                                                                               #
 #                SETUP LINUX AUTOMÁTICO - MULTI-DISTRO v2.0                     #
 #           Detecta e adapta-se à sua distribuição automaticamente              #
 #         Suporta: Ubuntu/Debian, Fedora/RHEL/Alma/Rocky, Arch/Manjaro          #
 #                                                                               #
-#               Uso: sudo bash Setup-Linux-TransDevs.sh                         #
-#          Ou: echo "SUA_SENHA" | sudo -S bash Setup-Linux-TransDevs.sh         #
+#               Uso: sudo bash Setup-Linux-TRAVADEV.sh                         #
+#          Ou: echo "SUA_SENHA" | sudo -S bash Setup-Linux-TRAVADEV.sh         #
 #                                                                               #
 #         ✅ 21 seções de configuração automática:                              #
 #         • System Update, Locale/Timezone, Repos, Dev Tools                    #
@@ -20,10 +20,10 @@
 #################################################################################
 
 # Log de execução
-LOG_FILE="/home/$(logname 2>/dev/null || echo "${SUDO_USER:-root}")/Área de trabalho/Setup-Linux-TransDevs-$(date +%Y%m%d_%H%M%S).log"
+LOG_FILE="/home/$(logname 2>/dev/null || echo "${SUDO_USER:-root}")/Área de trabalho/Setup-Linux-TRAVADEV-$(date +%Y%m%d_%H%M%S).log"
 mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || {
     # Fallback se Área de trabalho não existir
-    LOG_FILE="/home/$(logname 2>/dev/null || echo "${SUDO_USER:-root}")/Desktop/Setup-Linux-TransDevs-$(date +%Y%m%d_%H%M%S).log"
+    LOG_FILE="/home/$(logname 2>/dev/null || echo "${SUDO_USER:-root}")/Desktop/Setup-Linux-TRAVADEV-$(date +%Y%m%d_%H%M%S).log"
     mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
 }
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -1453,7 +1453,7 @@ do_terminal_theme() {
 
     if [ -z "$profile_uuid" ] || [ "$profile_uuid" = "" ]; then
         log_warn "Perfil padrão do GNOME Terminal não encontrado - criando novo perfil..."
-        profile_uuid=$(uuidgen 2>/dev/null || echo "transdevs-$(date +%s)")
+        profile_uuid=$(uuidgen 2>/dev/null || echo "TRAVADEV-$(date +%s)")
 
         # Obter lista de perfis existentes
         local profile_list=$(gsettings get org.gnome.Terminal.Legacy.Profiles list 2>/dev/null)
@@ -1480,7 +1480,7 @@ do_terminal_theme() {
     gsettings set "${profile_path}" foreground-color '#00FF00' 2>/dev/null || true
 
     # Configurações adicionais
-    gsettings set "${profile_path}" visible-name "TransDevs Theme" 2>/dev/null || true
+    gsettings set "${profile_path}" visible-name "TRAVADEV Theme" 2>/dev/null || true
     gsettings set "${profile_path}" font 'Ubuntu Mono 13' 2>/dev/null || true
     gsettings set "${profile_path}" bold-is-bright true 2>/dev/null || true
     gsettings set "${profile_path}" cursor-shape 'block' 2>/dev/null || true
@@ -1939,7 +1939,7 @@ main() {
     echo ""
     echo -e "${GREEN}"
     echo " ╔═══════════════════════════════════════════════════════╗"
-    echo " ║                 ⚧  TRANSDEVS                          ║"
+    echo " ║                 ⚧  TRAVADEV                          ║"
     echo " ║                                                       ║"
     echo " ║         SETUP LINUX AUTOMÁTICO - MULTI-DISTRO         ║"
     echo " ║                                                       ║"
