@@ -1,4 +1,4 @@
-# ⚧ TRANSDEVS - Setup Linux Automático
+# ⚧ TRAVADEV - Setup Linux Automático
 
 > **Script de configuração automática multi-distro para ambiente de desenvolvimento completo**
 
@@ -19,16 +19,16 @@
 
 ```bash
 # Clone o repositório
-git clone https://github.com/RafaelaCuoco/Setup-Linux-TransDevs.git
-cd Setup-Linux-TransDevs
+git clone https://github.com/RafaelaCuoco/Setup-Linux-TRAVADEV.git
+cd Setup-Linux-TRAVADEV
 
 # Execute com sudo
-sudo bash Setup-Linux-TransDevs.sh
+sudo bash Setup-Linux-TRAVADEV.sh
 ```
 
 Ou direto (sem salvar arquivo):
 ```bash
-wget -qO- https://raw.githubusercontent.com/RafaelaCuoco/Setup-Linux-TransDevs/main/Setup-Linux-TransDevs.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/RafaelaCuoco/Setup-Linux-TRAVADEV/main/Setup-Linux-TRAVADEV.sh | sudo bash
 ```
 
 ---
@@ -81,18 +81,18 @@ O script corrige automaticamente incompatibilidades para repositórios de tercei
 
 ### Básico
 ```bash
-sudo bash Setup-Linux-TransDevs.sh
+sudo bash Setup-Linux-TRAVADEV.sh
 ```
 
 ### Com senha automatizada
 ```bash
-echo "sua_senha" | sudo -S bash Setup-Linux-TransDevs.sh
+echo "sua_senha" | sudo -S bash Setup-Linux-TRAVADEV.sh
 ```
 
 ### Logs
 Os logs são salvos automaticamente na Área de Trabalho:
 ```bash
-~/Área\ de\ Trabalho/Setup-Linux-TransDevs-YYYYMMDD_HHMMSS.log
+~/Área\ de\ Trabalho/Setup-Linux-TRAVADEV-YYYYMMDD_HHMMSS.log
 ```
 
 ### Reexecutar
@@ -115,14 +115,14 @@ Forks são bem-vindos! Clone e personalize para suas necessidades:
 
 ```bash
 # Fork no GitHub → Clone seu fork
-git clone https://github.com/SEU_USUARIO/Setup-Linux-TransDevs.git
-cd Setup-Linux-TransDevs
+git clone https://github.com/SEU_USUARIO/Setup-Linux-TRAVADEV.git
+cd Setup-Linux-TRAVADEV
 
 # Edite o script (adicione/remova pacotes)
-vim Setup-Linux-TransDevs.sh
+vim Setup-Linux-TRAVADEV.sh
 
 # Execute sua versão
-sudo bash Setup-Linux-TransDevs.sh
+sudo bash Setup-Linux-TRAVADEV.sh
 ```
 
 ---
@@ -164,8 +164,8 @@ MIT License - veja [LICENSE](LICENSE) para detalhes.
 
 <div align="center">
 
-**Feito com 💜 por Rafaela Cuoco e comunidade TransDevs**
+**Feito com 💜 por Rafaela Cuoco e comunidade TRAVADEV**
 
-[Repositório](https://github.com/RafaelaCuoco/Setup-Linux-TransDevs) • [Issues](https://github.com/RafaelaCuoco/Setup-Linux-TransDevs/issues) • [Fork](https://github.com/RafaelaCuoco/Setup-Linux-TransDevs/fork)
+[Repositório](https://github.com/RafaelaCuoco/Setup-Linux-TRAVADEV) • [Issues](https://github.com/RafaelaCuoco/Setup-Linux-TRAVADEV/issues) • [Fork](https://github.com/RafaelaCuoco/Setup-Linux-TRAVADEV/fork)
 
 </div>
